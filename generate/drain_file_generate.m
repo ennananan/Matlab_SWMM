@@ -36,7 +36,7 @@ ground = 12.7;
 %【CONDUITS】       
 %G_length_Param=G_Length*multipliers;
 G_length_Param = ones(1, node) * ( G_Length / node ) ;
-G_length_Param = round( G_length_Param *10000 ) / 10000;
+G_length_Param = round( G_length_Param *100 ) / 100;
 
 % CONDUITS 管长写入
 sectionLine = findInpSectionLine(locG_temp , 'CONDUITS');

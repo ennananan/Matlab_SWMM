@@ -8,10 +8,11 @@
 
 %% 参数确认
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
-nodesCount = (5);
-drainlength = 500;
-width = 4000;
+nodesCount = (4);
+drainlength = 345;
+width = 1420;
 node_T = 127;
+outlet_height = 9.65;
 
 %指定模拟时间(min)，图像横坐标
 time = 40;
@@ -28,15 +29,17 @@ current_TL = drainlength;
 
 % G-Model 文件路径
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
-file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
+file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径
 % 文件查找和运行
 version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
+
 ds_version = version_match{1}{1};  % 提取到'3'
 
 % 生成目标路径（自动继承版本号）
@@ -69,12 +72,11 @@ R = zeros(size(Length_Param,2), size(rain,2), size(nodesCount,2));
     copyfile(locG,locG_temp); %此句之后的文件均用temp
 
     % 漫流宽度写入
-    sectionLine=findInpSectionLine(locG_temp, 'SUBCATCHMENTS');
-    width_file_generate(locG_temp ,locG_temp , sectionLine ,current_W );
+    width_file_generate(locG_temp , 70, current_W)
 
     % 管道参数修改
     % drain_file_generate(locG , node , LOC_CONDUITS , LOC_JUNCTIONS_1st, LOC_JUNCTIONS_2nd , G_Length , G_Height)
-     drain_file_generate(locG_temp , current_NC , 52 , 18, 29 , current_TL , 9.1);
+     drain_file_generate(locG_temp , current_NC , 52 , 18, 29 , current_TL , outlet_height);
 
     % 步骤4：运行模型
     % SWMM_model_running(inputfile, report_file, rain, current_NC) 
@@ -85,6 +87,7 @@ R = zeros(size(Length_Param,2), size(rain,2), size(nodesCount,2));
     flow_mean_G = mean(B_G, 2);
 %% 求NSE
  R = NSE_calculation1(A_T,B_G)
+ R_mean = mean(R)
  %R = NSE_calculation_un2(A_T,B_G)
  % 注意输入矩阵的规模匹配
 

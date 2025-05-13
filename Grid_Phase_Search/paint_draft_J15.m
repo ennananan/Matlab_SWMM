@@ -1,5 +1,5 @@
 
-file_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\J15-4-1a_T_result_sorted.mat';
+file_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results\J10-2-1a_T_result_combinedsorted.mat';
 
 load(file_path);  
 length = T_result_sorted{2:end,1};
@@ -16,10 +16,21 @@ hold on;
 x_coord_ratio = Length_all_combined / ave_length;
 y_coord_ratio = Width_all_combined  / C_width;
 
-scatter(x_coord_ratio, y_coord_ratio, 50 * scale, score_combined, 'filled');
+% 仅保留 score >= 0 的点
+valid_idx = score_combined >= 0.1;
+
+x_coord_ratio_valid = x_coord_ratio(valid_idx);
+y_coord_ratio_valid = y_coord_ratio(valid_idx);
+score_valid = score_combined(valid_idx);
+
+% 绘图
+scatter(x_coord_ratio_valid, y_coord_ratio_valid, 50 * scale, score_valid, 'filled');
+
+
+%scatter(x_coord_ratio, y_coord_ratio, 50 * scale, score_combined, 'filled');
  %scatter(Length_all_combined, Width_all_combined, 40, NSE_combined, 'filled');
 % 找出 >=0.97 的点索引
-idx_high = find(NSE_combined >= 0.975 & score_combined >= 0.8);
+idx_high = find(NSE_combined >= 0.975 & score_combined >= 0.82);
 
 % 保存高分点进一步分析
 length_high_score = Length_all_combined(idx_high);
@@ -27,15 +38,15 @@ width_high_score = Width_all_combined(idx_high);
 NSE_high_score = NSE_combined(idx_high);
 high_score = score_combined(idx_high);
 
-high_score_result = [length_high_score, width_high_score, NSE_high_score, high_score]
+high_score_result = [length_high_score, width_high_score, NSE_high_score, high_score];
 
-fprintf('第 %d 页没有位于边界且 NSE≥0.95 & Score ≥ 0.78 的点。\n', k);
+%fprintf('第 %d 页没有位于边界且 NSE≥0.95 & Score ≥ 0.78 的点。\n', k);
 
 T_high_score_result = table(length_high_score, width_high_score, NSE_high_score, high_score, ...
     'VariableNames', {'Length', 'Width', 'NSE', 'Score'});
 nodename = num2str(nodesCount);
 
-output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存';
+output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results';
 mat_path = fullfile(output_basicpath, ['J17-',nodename, '-',p '-high_score_result_save.mat']);
 save(mat_path, 'high_score_result', 'T_high_score_result', 'nodesCount','p', ...
     'ave_length', 'C_width','length_high_score','width_high_score','high_score', ...
@@ -104,11 +115,30 @@ set(gca , 'FontSize', 12 * scale);
 
 % 设置图像尺寸与导出分辨率
 % 固定边距（归一化单位防止错位）
+% gcf调图形位置，gca调内部
 set(gca, 'Units', 'normalized', 'Position', [0.12 0.12 0.6 0.7]*1.1);
 
 % 指定300 dpi 分辨率的png图像保存
-save_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5.7-参数算法结果图';
-% save_path = 'C:\Users\Administrator\Desktop\雨水建模\5-科创概化代码及结果索引\J17-5-1';
-output_file = 'J15-4-1.png';
-full_path = fullfile(save_path, output_file);
-exportgraphics(gca, full_path, 'Resolution', 600);
+save_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5.7-参数算法结果图\节点网格寻优';
+output_png = 'J11.png';
+output_fig = 'J11.fig';
+output_svg = 'J11';
+output_emf = 'J11.emf';
+
+% 保存 PNG 文件
+full_png_path = fullfile(save_path, output_png);
+exportgraphics(gca, full_png_path, 'Resolution', 600);
+disp(['png文件已保存至: ' full_png_path]);
+
+% 保存 FIG 文件（正确方式）
+full_fig_path = fullfile(save_path, output_fig);
+savefig(gcf, full_fig_path);
+disp(['fig文件已保存至: ' full_fig_path]);
+
+% 保存矢量图svg格式
+full_svg_path = fullfile(save_path, output_svg);
+saveas(gcf, full_svg_path,'svg');
+
+% 保存矢量图emf格式
+full_emf_path = fullfile(save_path, output_emf);
+exportgraphics(gca, full_emf_path, 'Resolution', 300);

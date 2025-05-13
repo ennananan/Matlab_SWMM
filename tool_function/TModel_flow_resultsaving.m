@@ -9,23 +9,27 @@ node_T = 127;
 time = 40;
 steps = 40 * 60;
 %% *************注意文件路径与目标结果要一致**********
-output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存';
+output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\T-Model_result';
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
 
 % G-Model 文件路径
-file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % 此处更改可以指定模型
+%file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % 此处更改可以指定模型
+file_template = 'UR_GModel_ms_1_%dnode_ver.inp'; % %d为节点数占位符
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径
 % 文件查找和运行
-version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+
+%version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
+
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
 ds_version = version_match{1}{1};  % 提取到'3'
 
 % 生成目标路径（自动继承版本号）
-new_filename = sprintf('UR_TModel_ds_%s.inp', ds_version);  % 动态插入版本号
+new_filename = sprintf('UR_TModel_ms.inp', ds_version);  % 动态插入版本号
 output_path = fullfile(base_path, new_filename);
 % current_file1 = fullfile(output_dir, sprintf(file_template, current_NC));
 
@@ -38,7 +42,7 @@ copyfile(locT, locT_temp);
 % SWMM_model_running(inputfile, report_file, rain, param_num, param_index, current_NC)
 A_T = SWMM_model_running(locT_temp ,locT_temp_report ,rain, node_T);
 % A = (steps ,length(rain) ,param_num) = (2400, 11, 1)
-A_T;
+A_T
 
 %% 保存结果部分
 % 生成基础文件名（去除扩展名）

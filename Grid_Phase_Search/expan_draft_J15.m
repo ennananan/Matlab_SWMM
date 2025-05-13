@@ -6,19 +6,31 @@ clear all
 %save(mat_path, 'T_result_sorted', 'rain', 'nodesCount','p', ...
 %    'ave_length', 'C_width','Length_all','Width_all','score', ...
 %    'fine_gap', 'expand_ratio');
-file_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\J15-t4-1a_T_result_sorted.mat';
+
+% mex -setup;loadlibrary('swmm5');
+% ###########################更改字段##############################
+file_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results\NAME,'-',nodename, '-',p '_T_result_sorted.mat';
+% ###########################更改字段##############################
+
 load(file_path);  
 selected_data = T_result_sorted{:, {'Length', 'Width','NSE','Score','PE','SOD'}}; % 通过列名
 
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
-p = '1a';
-nodesCount = (4); % 长度 = R的页数，概化范围总支管范围
-nodename = num2str(nodesCount);
-ave_length = 104.2;
-C_width = 2334.37;
+
 node_T = 127;
-pngsave_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5.7-参数算法结果图';
-output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存';
+
+% ###########################更改字段##############################
+NAME = 'J10';
+p = '1a';
+nodesCount = (2); % 长度 = R的页数，概化范围总支管范围
+nodename = num2str(nodesCount);
+ave_length = 97.1;
+C_width = 1193;
+outlet_height = 10.55;
+% #########################################################
+
+
+
 %指定模拟时间(min)，图像横坐标
 time = 40;
 steps = 40 * 60;
@@ -26,17 +38,25 @@ steps = 40 * 60;
 % G-Model 文件路径
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
 
+% ###########################更改字段##############################
 % 固定更改位置指明文件
-file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
+file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+% ################################################################
+
 output_dir = fullfile(base_path);
 
 % T-Model数据读取
 % 文件查找和运行
-version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
 ds_version = version_match{1}{1};  % 提取到'3'
 
 % 生成目标路径（自动继承版本号）
-new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本号
+output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\T-Model_result';
+%new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本号
+
+new_filename = sprintf('UR_TModel_ms', ds_version);  % 动态插入版本号
 file_path = fullfile(output_basicpath, [new_filename, '_',p '_Results.mat']);
 load(file_path);  % 加载后T-Model 运行结果 A_T 将直接可用，注意模型及重现期的对应
 % A_T
@@ -187,10 +207,9 @@ for parm_idx = 1: size(new_length_cleaned,1)
         current_TL = secst_combinations(secst_param_idx, 1);
         current_W = secst_combinations(secst_param_idx, 2);
 
-        sectionLine=findInpSectionLine(locG_temp, 'SUBCATCHMENTS');
         % 写入新参数
-        width_file_generate(locG_temp ,locG_temp , sectionLine ,current_W );
-        drain_file_generate(locG_temp , current_NC , 52 , 18, 29 , current_TL , 9.1);
+        width_file_generate(locG_temp , 70, current_W);
+        drain_file_generate(locG_temp , current_NC , 52 , 18, 29 , current_TL , outlet_height);
 
         % 运行模型
         B_G_secst_param(:,:,secst_param_idx) = SWMM_model_running(locG_temp ,locG_temp_report ,rain, current_NC);
@@ -250,7 +269,7 @@ w_SOD = 0.1;  % 流量稳定性权重
  PTE_vector = PTE_all(:,3);
  SOD_vector = [selected_data(:, 6); SOD_all(:,3)];
 
- NSE_norm_secst = (NSE_vector - min(NSE_vector)) / (max(NSE_vector) - min(NSE_vector));
+ NSE_norm_secst = (NSE_vector - min(NSE_vector)) ./ (max(NSE_vector) - min(NSE_vector));
  PE_norm_secst  = (1 - abs(PE_vector)) ./ (1 + abs(PE_vector)); % 越小越好
  SOD_norm_secst = (1 - abs(SOD_vector)) ./ (1 + abs(SOD_vector)); % 越小越好
 
@@ -271,15 +290,17 @@ Width_all_combined = selected_combined_data(:, 2);
 NSE_combined = selected_combined_data(:, 3);
 score_combined = selected_combined_data(:, 4);
 
-
+output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results';
 
 %% 保存CSV.MAT文件
-save_path = fullfile(output_basicpath, ['J15-',nodename, '-',p '_T_result_sorted.csv']);
-writetable(T_result_sorted, save_path);
+
+save_path = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_combinedsorted.csv']);
+writetable(T_result_secst, save_path);
 disp(['csv细化搜索结果已保存到: ' save_path]);
 
-mat_path = fullfile(output_basicpath, ['J15-',nodename, '-',p '_T_result_sorted.mat']);
-save(mat_path, 'T_result_sorted', 'rain', 'nodesCount','p', ...
+
+mat_path = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_combinedsorted.mat']);
+save(mat_path, 'T_result_secst', 'rain', 'nodesCount','p', ...
     'ave_length', 'C_width','Length_all_combined','Width_all_combined','score_secst', ...
     'gap_secst', 'expand_ratio', 'NSE_all','NSE_combined','score_combined');
 disp(['MAT文件已保存至: ' mat_path]);
