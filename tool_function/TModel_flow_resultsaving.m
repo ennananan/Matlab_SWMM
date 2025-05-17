@@ -1,6 +1,6 @@
 %% 将T-Model的运行结果进行文件储存，注意文件路径与目标模型一致
 
-% mex -setup;loadlibrary('swmm5');%每次重新打开软件都要创建一次
+ mex -setup;loadlibrary('swmm5');%每次重新打开软件都要创建一次
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
 p = '1a';
 node_T = 127;
@@ -14,24 +14,30 @@ base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-
 
 % G-Model 文件路径
 %file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % 此处更改可以指定模型
-file_template = 'UR_GModel_ms_1_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_ms_%dnode_ver.inp'; % %d为节点数占位符
+file_template = 'UR_GModel_us_%dnode_ver.inp'; % %d为节点数占位符
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径
 % 文件查找和运行
 
 %version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
-version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'ms_', 'tokens');
+version_match = regexp(file_template, 'us', 'tokens');
 
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
-ds_version = version_match{1}{1};  % 提取到'3'
+%ds_version = version_match{1}{1};  % 提取到'3'
+ds_version = version_match;
+
 
 % 生成目标路径（自动继承版本号）
-new_filename = sprintf('UR_TModel_ms.inp', ds_version);  % 动态插入版本号
+% new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本
+% new_filename = sprintf('UR_TModel_ms.inp', ds_version);  
+new_filename = sprintf('UR_TModel_us.inp');  
 output_path = fullfile(base_path, new_filename);
-% current_file1 = fullfile(output_dir, sprintf(file_template, current_NC));
+
 
 %T-Model 计算
 locT = output_path;

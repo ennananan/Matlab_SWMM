@@ -1,4 +1,4 @@
-clear all
+%clear all
 %% 文件load
 
 %length = T_result_sorted{2:end,1};
@@ -8,28 +8,24 @@ clear all
 %    'fine_gap', 'expand_ratio');
 
 % mex -setup;loadlibrary('swmm5');
-% ###########################更改字段##############################
-file_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results\NAME,'-',nodename, '-',p '_T_result_sorted.mat';
-% ###########################更改字段##############################
 
+% ###########################更改字段##############################
+NAME = 'J17';
+p = '1a';
+nodesCount = (5); % 长度 = R的页数，概化范围总支管范围
+nodename = num2str(nodesCount);
+ave_length = 104.19;
+C_width = 2334.37;
+outlet_height = 9.1;
+% ###########################更改字段##############################
+mat_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results';
+%只有在工作区中已经载入之后（文件夹自找或者连续模拟运行，其中的名称变量才可以直接使用
+file_path = fullfile(mat_path, [NAME,'-',nodename, '-',p '_T_result_sorted.mat']); 
+% ###########################更改字段##############################
 load(file_path);  
 selected_data = T_result_sorted{:, {'Length', 'Width','NSE','Score','PE','SOD'}}; % 通过列名
-
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
-
 node_T = 127;
-
-% ###########################更改字段##############################
-NAME = 'J10';
-p = '1a';
-nodesCount = (2); % 长度 = R的页数，概化范围总支管范围
-nodename = num2str(nodesCount);
-ave_length = 97.1;
-C_width = 1193;
-outlet_height = 10.55;
-% #########################################################
-
-
 
 %指定模拟时间(min)，图像横坐标
 time = 40;
@@ -40,23 +36,32 @@ base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-
 
 % ###########################更改字段##############################
 % 固定更改位置指明文件
+file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
 %file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
-file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_us_1node_ver.inp'; % %d为节点数占位符
 % ################################################################
 
 output_dir = fullfile(base_path);
 
 % T-Model数据读取
 % 文件查找和运行
-%version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
-version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
+% ###########################更改字段##############################
+ version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+% version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'us_(\d+)', 'tokens');
 ds_version = version_match{1}{1};  % 提取到'3'
+% ###########################更改字段##############################
 
 % 生成目标路径（自动继承版本号）
 output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\T-Model_result';
-%new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本号
 
-new_filename = sprintf('UR_TModel_ms', ds_version);  % 动态插入版本号
+% ###########################更改字段##############################
+ new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本号
+% new_filename = sprintf('UR_TModel_ms', ds_version);
+%new_filename = sprintf('UR_TModel_us', ds_version); 
+% ###########################更改字段##############################
+
 file_path = fullfile(output_basicpath, [new_filename, '_',p '_Results.mat']);
 load(file_path);  % 加载后T-Model 运行结果 A_T 将直接可用，注意模型及重现期的对应
 % A_T
@@ -229,36 +234,32 @@ for parm_idx = 1: size(new_length_cleaned,1)
     end
 
     % 计算这一组参数在所有降雨下的指标平均值
-    Peak_Error_matrix(:, parm_idx)  = mean(PE_temp_all,2);
-    PTE_matrix(:, parm_idx) = mean(PTE_temp_all,2);
-    SOD_matrix(:, parm_idx) = mean(SOD_temp_all,2);
+    Peak_Error_matrix{parm_idx} = mean(PE_temp_all, 2);
+    PTE_matrix{parm_idx}        = mean(PTE_temp_all, 2);
+    SOD_matrix{parm_idx}        = mean(SOD_temp_all, 2);
 
     % 计算局部NSE
     R_secst(:, :, parm_idx) = NSE_calculation_3d_opticalvision(B_G_secst_param, A_T);
     
     
     % 计算平均NSE，边界判断
-    R_temp_mean = mean(R_secst(:,:,parm_idx), 2);
-
-    % 以列向扩展的方式将参数和结果拼在了一个矩阵里以供选择
-    R_secst_all = [R_secst_all; secst_combinations, R_temp_mean]; % 对应参数NSE页每行求均值，均值化了降雨事件
-
+    R_fine_all_matrix{parm_idx} = mean(R_secst(:,:,parm_idx), 2);
     % 将每组局部细化搜索结果累积到总数组（每一行是一个组合）
 
     Length_all = [Length_all; secst_combinations(:,1)];
     Width_all  = [Width_all; secst_combinations(:,2)];
-    PE_all  = [PE_all;  secst_combinations, Peak_Error_matrix(:, parm_idx)];
-    PTE_all = [PTE_all; secst_combinations, PTE_matrix(:, parm_idx)];
-    SOD_all = [SOD_all; secst_combinations, SOD_matrix(:, parm_idx)];
-    NSE_all = R_secst_all;
+    PE_all  = [PE_all;  secst_combinations, Peak_Error_matrix{parm_idx}];
+    PTE_all = [PTE_all; secst_combinations, PTE_matrix{parm_idx}];
+    SOD_all = [SOD_all; secst_combinations, SOD_matrix{parm_idx}];
+    NSE_all = [NSE_all; secst_combinations, R_fine_all_matrix{parm_idx}];
 end
  % PE、PTE、SOD拉平成一列（注意顺序），G老师说有问题，还要再看
 
 
  %% 综合得分计算
 % 推荐加权参数（可以调整）
-w_NSE = 0.6;  % NSE权重
-w_PE  = 0.3;  % 峰值误差权重
+w_NSE = 0.7;  % NSE权重
+w_PE  = 0.2;  % 峰值误差权重
 w_SOD = 0.1;  % 流量稳定性权重
 
 % 归一化（防止不同指标量纲不一致）||score在两阶段需要重新拼接后统一计算，否则归一化过程中会产生两阶段计算不一致的情况
@@ -269,11 +270,11 @@ w_SOD = 0.1;  % 流量稳定性权重
  PTE_vector = PTE_all(:,3);
  SOD_vector = [selected_data(:, 6); SOD_all(:,3)];
 
- NSE_norm_secst = (NSE_vector - min(NSE_vector)) ./ (max(NSE_vector) - min(NSE_vector));
+ NSE_norm_secst = (NSE_vector - min(NSE_vector)) / (max(NSE_vector) - min(NSE_vector));
  PE_norm_secst  = (1 - abs(PE_vector)) ./ (1 + abs(PE_vector)); % 越小越好
  SOD_norm_secst = (1 - abs(SOD_vector)) ./ (1 + abs(SOD_vector)); % 越小越好
 
-% 计算最终综合得分//
+% 计算最终综合得分
 score_secst = w_NSE * NSE_norm_secst + w_PE * PE_norm_secst + w_SOD * SOD_norm_secst;
 
 %% 整理成表格并排序
@@ -300,7 +301,7 @@ disp(['csv细化搜索结果已保存到: ' save_path]);
 
 
 mat_path = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_combinedsorted.mat']);
-save(mat_path, 'T_result_secst', 'rain', 'nodesCount','p', ...
+save(mat_path, 'T_result_secst', 'rain', 'nodesCount','p','NAME','save_path_use', ...
     'ave_length', 'C_width','Length_all_combined','Width_all_combined','score_secst', ...
     'gap_secst', 'expand_ratio', 'NSE_all','NSE_combined','score_combined');
 disp(['MAT文件已保存至: ' mat_path]);

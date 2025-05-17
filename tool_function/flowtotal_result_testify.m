@@ -8,11 +8,15 @@
 
 %% 参数确认
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
-nodesCount = (4);
-drainlength = 345;
-width = 1420;
+nodesCount = (5);
+drainlength = 104.19;
+width = 2334.37;
 node_T = 127;
-outlet_height = 9.65;
+outlet_height = 9.1;
+
+NAME = 'J17';
+p = '1a';
+
 
 %指定模拟时间(min)，图像横坐标
 time = 40;
@@ -29,7 +33,8 @@ current_TL = drainlength;
 
 % G-Model 文件路径
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
-file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
+file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
+ %file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径

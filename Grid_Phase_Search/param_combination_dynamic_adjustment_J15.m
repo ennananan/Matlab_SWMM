@@ -13,13 +13,13 @@ rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
 
 
 % ###########################更改字段##############################
-NAME = 'J10';
+NAME = 'J17';
 p = '1a';
-nodesCount = (2); % 长度 = R的页数，概化范围总支管范围
+nodesCount = (5); % 长度 = R的页数，概化范围总支管范围
 nodename = num2str(nodesCount);
-ave_length = 97.1;
-C_width = 1193;
-outlet_height = 10.55;
+ave_length = 104.19;
+C_width = 2334.37;
+outlet_height = 9.1;
 % ###########################更改字段##############################
 
 node_T = 127;
@@ -52,29 +52,34 @@ Width_Param = round(Width_Param * 100) / 100;
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
 
 % ###########################更改字段##############################
-%file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
-
-file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_us_1node_ver.inp'; % %d为节点数占位符
 % ###########################更改字段##############################
-
 output_dir = fullfile(base_path);
 
-% T-Model数据读取
+% T-Model 文件路径
 % 文件查找和运行
-%version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
-version_match = regexp(file_template, 'ms_(\d+)', 'tokens');
+
+version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'ms', 'tokens');
+%version_match = regexp(file_template, 'us', 'tokens');
 
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
-ds_version = version_match{1}{1};  % 提取到'3'
+ds_version = version_match{1}{1};  % 下游相关
+%ds_version = version_match;  % 中上游相关
 
+
+% 生成目标路径（自动继承版本号）
+ new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本
+% new_filename = sprintf('UR_TModel_ms', ds_version);  
+%new_filename = sprintf('UR_TModel_us');  
+output_path = fullfile(base_path, new_filename);
 
 output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\T-Model_result';
-% 生成目标路径（自动继承版本号）使用TModel_flow_resultsaving.m提前生成相关算法
-% new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本
-
-new_filename = sprintf('UR_TModel_ms', ds_version);  % 动态插入版本号
 file_path = fullfile(output_basicpath, [new_filename, '_',p '_Results.mat']);
 load(file_path);  % 加载后T-Model 运行结果 A_T 将直接可用，注意模型及重现期的对应
 % A_T
@@ -314,12 +319,13 @@ T_result_sorted = sortrows(T_result, 'Score', 'descend')
 pngsave_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5.7-参数算法结果图\节点网格寻优';
 output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\node_net_results';
 
+save_path_use = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_sorted.csv']);
 save_path = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_sorted.csv']);
 writetable(T_result_sorted, save_path);
 disp(['csv细化搜索结果已保存到: ' save_path]);
 
 mat_path = fullfile(output_basicpath, [NAME,'-',nodename, '-',p '_T_result_sorted.mat']);
-save(mat_path, 'T_result_sorted', 'rain', 'nodesCount','p','nodename','NAME','', ...
+save(mat_path, 'T_result_sorted', 'rain', 'nodesCount','p','nodename','NAME','save_path_use', ...
     'ave_length', 'C_width','Length_all','Width_all','score', ...
     'fine_gap', 'expand_ratio');
 disp(['MAT文件已保存至: ' mat_path]);
