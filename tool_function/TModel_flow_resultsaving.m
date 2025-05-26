@@ -1,9 +1,9 @@
 %% 将T-Model的运行结果进行文件储存，注意文件路径与目标模型一致
 
- mex -setup;loadlibrary('swmm5');%每次重新打开软件都要创建一次
+% mex -setup;loadlibrary('swmm5');%每次重新打开软件都要创建一次
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
 p = '1a';
-node_T = 127;
+node_T = 127; %科创园模型选点
 
 %指定模拟时间(min)，图像横坐标
 time = 40;
@@ -13,17 +13,26 @@ output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化�
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
 
 % G-Model 文件路径
+%file_template = 'UR_GModel_ds_3_%dnode_ver.inp';
+%file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; 
 %file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % 此处更改可以指定模型
 %file_template = 'UR_GModel_ms_%dnode_ver.inp'; % %d为节点数占位符
-file_template = 'UR_GModel_us_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_us_%dnode_ver.inp'; % %d为节点数占位符
+
+%小区模型
+file_template = 'UR_RE_GModel.inp'; % %d为节点数占位符 小区模型
+%file_template = 'UR_RE_GModel_3node.inp'; % %d为节点数占位符 小区模型
+node_T = 102;  %小区模型选点
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径
 % 文件查找和运行
 
 %version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
-%version_match = regexp(file_template, 'ms_', 'tokens');
-version_match = regexp(file_template, 'us', 'tokens');
+%version_match = regexp(file_template, 'ms', 'tokens');
+%version_match = regexp(file_template, 'us', 'tokens');
+
+version_match = regexp(file_template, 'RE', 'tokens'); %小区模型
 
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
@@ -33,9 +42,14 @@ ds_version = version_match;
 
 
 % 生成目标路径（自动继承版本号）
-% new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本
-% new_filename = sprintf('UR_TModel_ms.inp', ds_version);  
-new_filename = sprintf('UR_TModel_us.inp');  
+% new_filename = sprintf('UR_TModel_ds_%s.inp', ds_version);  % 动态插入版本
+% new_filename = sprintf('UR_TModel_ms.inp');  
+% new_filename = sprintf('UR_TModel_us.inp');  
+
+%小区模型
+new_filename = sprintf('UR_RE_TModel.inp');  % 动态插入版本号
+%new_filename = sprintf('UR_TModel_ds_%s_chicago.inp', ds_version);  % 动态插入版本号
+
 output_path = fullfile(base_path, new_filename);
 
 
@@ -48,7 +62,7 @@ copyfile(locT, locT_temp);
 % SWMM_model_running(inputfile, report_file, rain, param_num, param_index, current_NC)
 A_T = SWMM_model_running(locT_temp ,locT_temp_report ,rain, node_T);
 % A = (steps ,length(rain) ,param_num) = (2400, 11, 1)
-A_T
+A_T;
 
 %% 保存结果部分
 % 生成基础文件名（去除扩展名）

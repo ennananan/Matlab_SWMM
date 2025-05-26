@@ -1,4 +1,4 @@
-%% 流量过程线验证程序
+%% 流量过程线验证程序——科创园
 % 快速找到指定文件，写入指定参数，进行过程线导出，并计算NSE，对效果进行验证
 
 % SWMM_model_running输出一个2400 * 11的结果矩阵
@@ -7,20 +7,30 @@
 % mex -setup;loadlibrary('swmm5');%每次重新打开软件都要创建一次
 
 %% 参数确认
-rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
-nodesCount = (5);
-drainlength = 104.19;
-width = 2334.37;
-node_T = 127;
-outlet_height = 9.1;
-
+ rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
+%rain = [1:24];     多历时最大流量达峰对比
+%rain = 25;      %芝加哥雨型
 NAME = 'J17';
 p = '1a';
+nodesCount = (5);
+drainlength = 52.1;
+width = 233.4;
+
+%outlet_height = 11.25;      % us
+%outlet_height = 10.55;      % ms
+%outlet_height = 10.33;      % ds_1
+%outlet_height = 9.7;        % ds_2
+outlet_height = 9.1;        % ds_3
+%^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 
+%pic_title = sprintf( '%s - Length %.2f - Width %.2f - Flow Process', NAME, drainlength, width)
+pic_title = sprintf( '%s - Node %d - Width %.2f - Flow Process', NAME, nodesCount, drainlength)
 %指定模拟时间(min)，图像横坐标
 time = 40;
 steps = 40 * 60;
+
+node_T = 127;
 
 % 管长数据
 %Length_Param = length * multipliers;
@@ -34,21 +44,32 @@ current_TL = drainlength;
 % G-Model 文件路径
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
 file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
- %file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_ds_2_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_ms_%dnode_ver.inp'; % %d为节点数占位符
+%file_template = 'UR_GModel_us_%dnode_ver.inp'; % %d为节点数占位符
+
+
 output_dir = fullfile(base_path);
 
 % T-Model 文件路径
 % 文件查找和运行
 version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'ms', 'tokens'); 
+%version_match = regexp(file_template, 'us', 'tokens');
 
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
 
-ds_version = version_match{1}{1};  % 提取到'3'
+ds_version = version_match{1}{1};  % 下游相关
+%ds_version = version_match;  % 中上游相关
 
 % 生成目标路径（自动继承版本号）
-new_filename = sprintf('UR_TModel_ds_%s.inp', ds_version);  % 动态插入版本号
+ new_filename = sprintf('UR_TModel_ds_%s.inp', ds_version);  % 动态插入版本号
+% new_filename = sprintf('UR_TModel_ms.inp');  
+% new_filename = sprintf('UR_TModel_us.inp');  % 动态插入版本号
+
 output_path = fullfile(base_path, new_filename);
 % current_file1 = fullfile(output_dir, sprintf(file_template, current_NC));
 
@@ -70,6 +91,7 @@ R = zeros(size(Length_Param,2), size(rain,2), size(nodesCount,2));
     % 参数指定
     % 生成动态文件路径
     current_file = fullfile(output_dir, sprintf(file_template, current_NC));
+    %current_file = fullfile(output_dir, sprintf(file_template));   %小区模型
 
     locG = current_file;
     locG_temp = strrep(locG,'.inp','temp.inp');
@@ -96,6 +118,19 @@ R = zeros(size(Length_Param,2), size(rain,2), size(nodesCount,2));
  %R = NSE_calculation_un2(A_T,B_G)
  % 注意输入矩阵的规模匹配
 
+max_AT = max(A_T, [], 1);  % [1, n]
+max_BG = squeeze(max(B_G, [], 1));  % [n, p]
+PER = 1 - abs((max_BG' ./ max_AT') - 1)  % [n, p]
+PER_sorted = sortrows(PER,"ascend");
+PER_mean = mean(PER(1:6))
+
+window_size = 10;         % 设置滑动窗口大小
+msdm_value = calMSDM(B_G, window_size);
+
+[msdm_A, msdm_B, movstd_corr, mov_std_A, mov_std_B] = compareMSDM(A_T, B_G, window_size);
+movstd_corr
+
+
 %% 流量过程线评价
 % 计算残差（模拟与观测的差异）
 residual = abs(A_T - B_G);
@@ -105,11 +140,6 @@ SD_residual = std(residual);
 CV_residual = SD_residual ./ mean(abs(residual)); % 使用绝对残差均值更稳健
 CV_Total = mean(CV_residual);
  
-for i = length(rain)
-
-    peak_temp = abs((max(B_G(1)) ./ max(A_T)) - 1);
-end
-
 %% 流量过程线绘图（双模型对比版）
 
 figure('Name','流量过程线验证','NumberTitle','off', 'Position', [200 200 1400 800]);
@@ -143,7 +173,6 @@ for rain_idx = 1:length(rain)
         'LineWidth', 1.5,...
         'LineStyle', '-')
 
-
 end
 
 hold off
@@ -152,7 +181,9 @@ hold off
 grid on
 xlabel('模拟时间 (分钟)', 'FontSize', 11, 'FontWeight', 'bold')
 ylabel('流量 (L/s)', 'FontSize', 11, 'FontWeight', 'bold')
-title(sprintf('%d node - 流量过程线', current_NC), 'FontSize', 13)
+title(sprintf( '%s - Length %.2f - Width %.2f - Flow Process', NAME, drainlength, width), ...
+    'FontSize', 13 ,...
+    'FontName','Times New Roman')
 
 %% 修改后的图例代码（参数化标签）
 % 生成动态图例标签

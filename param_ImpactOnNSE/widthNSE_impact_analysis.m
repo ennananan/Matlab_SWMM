@@ -9,8 +9,17 @@
 %%  概化参数的起始点确认及输入
 rain = [1,2,3,4,5,6,7,8,9,10,11];% 1a - rainfall
 nodesCount = [1,2,3,4,5,6,7,8]; % R的页数
-ave_length = 112.4;
-C_width = 2114;
+
+% ###########################更改字段##############################
+NAME = 'J17';
+p = '1a';
+nodesCount = (5); % 长度 = R的页数，概化范围总支管范围
+nodename = num2str(nodesCount);
+ave_length = 104.19;
+C_width = 2334.37;
+outlet_height = 9.1;
+% ###########################更改字段##############################
+
 node_T = 127;
 pngsave_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5.7-参数算法结果图';
 %指定模拟时间(min)，图像横坐标
@@ -36,61 +45,56 @@ Width_Param = round(Width_Param * 100) / 100; % R的行数
 
 % G-Model 文件路径
 base_path = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\5-科创园上游概化模型\';
+% ###########################更改字段##############################
 file_template = 'UR_GModel_ds_3_%dnode_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_ds_1_%dnode_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_ms_2node_ver.inp'; % %d为节点数占位符
+% file_template = 'UR_GModel_us_1node_ver.inp'; % %d为节点数占位符
+% ###########################更改字段##############################
 output_dir = fullfile(base_path);
 
 
 % T-Model 文件路径
 % 文件查找和运行
+
 version_match = regexp(file_template, 'ds_(\d+)', 'tokens');
+%version_match = regexp(file_template, 'ms', 'tokens');
+%version_match = regexp(file_template, 'us', 'tokens');
+
 if isempty(version_match)
     error('模板文件名格式错误，未找到ds_版本号');
 end
-ds_version = version_match{1}{1};  % 提取到'3'
+
+ds_version = version_match{1}{1};  % 下游相关
+%ds_version = version_match;  % 中上游相关
 
 % 生成目标路径（自动继承版本号）
-new_filename = sprintf('UR_TModel_ds_%s.inp', ds_version);  % 动态插入版本号
+ new_filename = sprintf('UR_TModel_ds_%s', ds_version);  % 动态插入版本
+% new_filename = sprintf('UR_TModel_ms', ds_version);  
+%new_filename = sprintf('UR_TModel_us');  
 output_path = fullfile(base_path, new_filename);
-% current_file1 = fullfile(output_dir, sprintf(file_template, current_NC));
 
-
-%T-Model 计算
-locT = output_path;
-locT_temp = strrep(locT, '.inp', 'temp.inp');
-locT_temp_report = strrep(locT_temp, 'temp.inp', 'temp.rpt');
-copyfile(locT, locT_temp);
-
-% SWMM_model_running(inputfile, report_file, rain, param_num, param_index, current_NC)
-A_T = SWMM_model_running(locT_temp ,locT_temp_report ,rain, node_T);
-% A = (steps ,length(rain) ,param_num) = (2400, 11, 1)
-A_T;
-size(A_T);
+output_basicpath = 'C:\Users\Administrator\Desktop\雨水建模\4-科创概化研究\7-运行结果储存\T-Model_result';
+file_path = fullfile(output_basicpath, [new_filename, '_',p '_Results.mat']);
+load(file_path);  % 加载后T-Model 运行结果 A_T 将直接可用，注意模型及重现期的对应
+% A_T
 
 R = zeros(size(Length_Param,2), size(rain,2), size(nodesCount,2));
 
 % G_Model文件遍历
 
 for node_idx  = 1: size(nodesCount,2)
-
     % 参数指定
     current_NC = nodesCount(:,node_idx);
-    % =====重点研究的部分======
-    current_W = 2114;
-    % ========================
-
     % 生成动态文件路径
     current_file = fullfile(output_dir, sprintf(file_template, current_NC));
-
     locG = current_file;
     locG_temp = strrep(locG,'.inp','temp.inp');
     locG_temp_report = strrep(locG_temp,'temp.inp','temp.rpt');
     copyfile(locG,locG_temp); %此句之后的文件均用temp
 
     % 漫流宽度写入
-    sectionLine=findInpSectionLine(locG_temp, 'SUBCATCHMENTS');
-    width_file_generate(locG_temp ,locG_temp , sectionLine ,current_W );
-
-    % 管道模型run
+    width_file_generate(locG_temp , 70, current_W);
 
     B_G = zeros(steps, length(rain), size(Length_Param,2)); % 很妙的位置选择，避免了使用四维数组来储存的问题
     for combo_idx = 1:size(Length_Param,2)
